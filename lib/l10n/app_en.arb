@@ -13,7 +13,14 @@
   "retry": "Try again",
   "chapterLabel": "{number}. {title}",
   "@chapterLabel": {
-    "placeholders": {"number": {"type": "int"}, "title": {"type": "String"}}
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "copyLink": "Copy a link to this card",
   "linkCopied": "Link copied",
@@ -22,9 +29,21 @@
   "levelSenior": "Senior",
   "levelArchitect": "Architect",
   "cardsLeft": "{count, plural, =1{1 card left today} other{{count} cards left today}}",
-  "@cardsLeft": {"placeholders": {"count": {"type": "int"}}},
+  "@cardsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "streakDays": "{days, plural, =0{No streak yet} =1{1-day streak} other{{days}-day streak}}",
-  "@streakDays": {"placeholders": {"days": {"type": "int"}}},
+  "@streakDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "showAnswer": "Show answer",
   "hideAnswer": "Hide answer",
   "keyboardHint": "Space to show the answer · 1–4 to grade",
@@ -33,14 +52,33 @@
   "gradeGood": "Good",
   "gradeEasy": "Easy",
   "nextReview": "{days, plural, =0{today} =1{1 day} other{{days} days}}",
-  "@nextReview": {"placeholders": {"days": {"type": "int"}}},
+  "@nextReview": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "withShortcut": "{key} · {label}",
   "@withShortcut": {
-    "placeholders": {"key": {"type": "int"}, "label": {"type": "String"}}
+    "placeholders": {
+      "key": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
   },
   "doneTitle": "All done for today",
   "doneBody": "{count, plural, =0{Nothing is due right now. Browse the cards, or come back tomorrow for new ones.} =1{You reviewed 1 card today. Come back tomorrow to keep your streak going.} other{You reviewed {count} cards today. Come back tomorrow to keep your streak going.}}",
-  "@doneBody": {"placeholders": {"count": {"type": "int"}}},
+  "@doneBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "browseCards": "Browse all cards",
   "seeProgress": "See your progress",
   "studyToday": "Study today's cards",
@@ -49,7 +87,13 @@
   "chapter": "Chapter",
   "allChapters": "All chapters",
   "resultCount": "{count, plural, =0{No cards match} =1{1 card} other{{count} cards}}",
-  "@resultCount": {"placeholders": {"count": {"type": "int"}}},
+  "@resultCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "clearFilters": "Clear filters",
   "statusNew": "New",
   "statusLearning": "Learning",
@@ -62,17 +106,36 @@
   "statMastered": "Mastered",
   "ofTotal": "{count} / {total}",
   "@ofTotal": {
-    "placeholders": {"count": {"type": "int"}, "total": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "masteryTitle": "Mastery by chapter",
   "masteryExplainer": "A card is mastered once its next review is at least {days} days away.",
-  "@masteryExplainer": {"placeholders": {"days": {"type": "int"}}},
+  "@masteryExplainer": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "masteryBreakdown": "{mastered} mastered · {learning} learning · {fresh} new",
   "@masteryBreakdown": {
     "placeholders": {
-      "mastered": {"type": "int"},
-      "learning": {"type": "int"},
-      "fresh": {"type": "int"}
+      "mastered": {
+        "type": "int"
+      },
+      "learning": {
+        "type": "int"
+      },
+      "fresh": {
+        "type": "int"
+      }
     }
   },
   "aboutTitle": "About these cards",
@@ -82,5 +145,33 @@
   "resetBody": "This forgets every review and your streak on this device. It can't be undone.",
   "cancel": "Cancel",
   "reset": "Reset",
-  "resetDone": "Progress reset"
+  "resetDone": "Progress reset",
+  "focusAll": "Focus: all cards",
+  "focusSome": "Focus: {chapters} · {levels}",
+  "@focusSome": {
+    "placeholders": {
+      "chapters": {
+        "type": "String"
+      },
+      "levels": {
+        "type": "String"
+      }
+    }
+  },
+  "chapterCount": "{count, plural, =1{1 chapter} other{{count} chapters}}",
+  "@chapterCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "allLevels": "all levels",
+  "focusTitle": "Focus today's cards",
+  "focusExplainer": "Pick the chapters and levels to study, for example to prepare for a senior interview. Leave a group empty to include all of it.",
+  "levels": "Levels",
+  "chapters": "Chapters",
+  "studyEverything": "Study everything",
+  "done": "Done",
+  "changeFocus": "Change focus"
 }

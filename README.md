@@ -32,6 +32,7 @@ Each card links back to its section in the handbook, and the cards are generated
 ## Features
 
 - **Spaced repetition.** Grade each card *Again*, *Hard*, *Good* or *Easy*; each button shows when you'll see the card next. A daily queue mixes due cards with up to 10 new ones.
+- **Focus** today's cards on the chapters and levels you need, for example only 🟡 Senior questions before a senior interview, or one chapter you keep getting wrong.
 - **Browse and search** all 67 questions, filtered by chapter and level.
 - **Progress:** daily streak, cards reviewed today, and mastery bars for each chapter. Reset any time.
 - **Share a question.** Every card has its own link, like [`#/card/final-vs-const-vs-late`](https://chandrachaan.github.io/flutter-interview-cards/#/card/final-vs-const-vs-late).

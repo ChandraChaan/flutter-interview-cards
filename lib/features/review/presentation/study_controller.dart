@@ -4,8 +4,10 @@ import '../../../core/clock.dart';
 import '../../deck/domain/flashcard.dart';
 import '../../deck/presentation/deck_providers.dart';
 import '../domain/scheduler.dart';
+import '../domain/study_focus.dart';
 import '../domain/study_progress.dart';
 import 'progress_controller.dart';
+import 'study_focus_controller.dart';
 
 /// Today's study session.
 final class StudySession {
@@ -16,6 +18,7 @@ final class StudySession {
     required this.reviewedToday,
     required this.streak,
     required this.nextIntervals,
+    required this.focus,
   });
 
   final Deck deck;
@@ -29,6 +32,9 @@ final class StudySession {
   /// Days until the current card comes back, for each grade.
   final Map<Grade, int> nextIntervals;
 
+  /// The chapters and levels today's queue is limited to.
+  final StudyFocus focus;
+
   Flashcard? get current => queue.firstOrNull;
 
   StudySession copyWith({bool? revealed}) => StudySession(
@@ -38,6 +44,7 @@ final class StudySession {
     reviewedToday: reviewedToday,
     streak: streak,
     nextIntervals: nextIntervals,
+    focus: focus,
   );
 }
 
@@ -51,8 +58,9 @@ class StudyController extends AsyncNotifier<StudySession> {
     final progress = await ref.watch(progressControllerProvider.future);
     final scheduler = ref.watch(schedulerProvider);
     final now = ref.watch(clockProvider)();
+    final focus = ref.watch(studyFocusProvider);
     final queue = scheduler.dailyQueue(
-      cards: deck.cards,
+      cards: [...deck.cards.where(focus.includes)],
       progress: progress,
       now: now,
     );
@@ -68,6 +76,7 @@ class StudyController extends AsyncNotifier<StudySession> {
           for (final grade in Grade.values)
             grade: scheduler.intervalFor(progress.cards[current.id], grade),
       },
+      focus: focus,
     );
   }
 

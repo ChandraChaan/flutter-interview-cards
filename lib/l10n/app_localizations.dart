@@ -459,6 +459,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Progress reset'**
   String get resetDone;
+
+  /// No description provided for @focusAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus: all cards'**
+  String get focusAll;
+
+  /// No description provided for @focusSome.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus: {chapters} · {levels}'**
+  String focusSome(String chapters, String levels);
+
+  /// No description provided for @chapterCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chapter} other{{count} chapters}}'**
+  String chapterCount(int count);
+
+  /// No description provided for @allLevels.
+  ///
+  /// In en, this message translates to:
+  /// **'all levels'**
+  String get allLevels;
+
+  /// No description provided for @focusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus today\'s cards'**
+  String get focusTitle;
+
+  /// No description provided for @focusExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the chapters and levels to study, for example to prepare for a senior interview. Leave a group empty to include all of it.'**
+  String get focusExplainer;
+
+  /// No description provided for @levels.
+  ///
+  /// In en, this message translates to:
+  /// **'Levels'**
+  String get levels;
+
+  /// No description provided for @chapters.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get chapters;
+
+  /// No description provided for @studyEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'Study everything'**
+  String get studyEverything;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @changeFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Change focus'**
+  String get changeFocus;
 }
 
 class _AppLocalizationsDelegate

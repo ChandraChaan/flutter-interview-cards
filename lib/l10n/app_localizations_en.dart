@@ -250,4 +250,48 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetDone => 'Progress reset';
+
+  @override
+  String get focusAll => 'Focus: all cards';
+
+  @override
+  String focusSome(String chapters, String levels) {
+    return 'Focus: $chapters · $levels';
+  }
+
+  @override
+  String chapterCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chapters',
+      one: '1 chapter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get allLevels => 'all levels';
+
+  @override
+  String get focusTitle => 'Focus today\'s cards';
+
+  @override
+  String get focusExplainer =>
+      'Pick the chapters and levels to study, for example to prepare for a senior interview. Leave a group empty to include all of it.';
+
+  @override
+  String get levels => 'Levels';
+
+  @override
+  String get chapters => 'Chapters';
+
+  @override
+  String get studyEverything => 'Study everything';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get changeFocus => 'Change focus';
 }

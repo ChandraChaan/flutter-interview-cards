@@ -11,6 +11,7 @@ import '../../deck/presentation/flashcard_view.dart';
 import '../domain/study_progress.dart';
 import 'progress_controller.dart';
 import 'study_controller.dart';
+import 'study_focus_sheet.dart';
 
 class StudyScreen extends ConsumerWidget {
   const StudyScreen({super.key});
@@ -142,6 +143,12 @@ class _SessionHeader extends StatelessWidget {
             const SizedBox(width: 4),
             Text(l10n.streakDays(session.streak), style: style),
           ],
+        ),
+        TextButton.icon(
+          key: const Key('focus'),
+          onPressed: () => showStudyFocusSheet(context, session.deck.chapters),
+          icon: const Icon(Icons.tune, size: 18),
+          label: Text(focusLabel(context, session.focus)),
         ),
       ],
     );
@@ -330,6 +337,13 @@ class _DoneView extends StatelessWidget {
                     icon: const Icon(Icons.search),
                     label: Text(l10n.browseCards),
                   ),
+                  if (!session.focus.isAll)
+                    FilledButton.tonalIcon(
+                      onPressed: () =>
+                          showStudyFocusSheet(context, session.deck.chapters),
+                      icon: const Icon(Icons.tune),
+                      label: Text(l10n.changeFocus),
+                    ),
                   OutlinedButton.icon(
                     onPressed: () => context.go('/progress'),
                     icon: const Icon(Icons.insights_outlined),

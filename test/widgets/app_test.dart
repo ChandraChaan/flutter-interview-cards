@@ -136,6 +136,32 @@ void main() {
     });
   });
 
+  testWidgets('focusing on a chapter limits the queue and is remembered', (
+    tester,
+  ) async {
+    final container = await pumpApp(tester);
+    expect(_text('Focus: all cards'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('focus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('focus-ui')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('focus-done')));
+    await tester.pumpAndSettle();
+
+    expect(_text('Focus: 1 chapter · all levels'), findsOneWidget);
+    expect(_text('2 cards left today'), findsOneWidget);
+    expect(_text('Question 2'), findsOneWidget);
+
+    final prefs = container.read(sharedPreferencesProvider);
+    expect(prefs.getString('settings.studyFocus'), contains('ui'));
+
+    // Keyboard shortcuts still work after the sheet closes.
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+    expect(_text('Answer 2'), findsOneWidget);
+  });
+
   group('deep links', () {
     testWidgets('#/card/<id> opens that card', (tester) async {
       final container = await pumpApp(tester);
