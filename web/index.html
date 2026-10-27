@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Replaced by `flutter build web --base-href`. -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flutter Interview Cards: spaced-repetition flashcards</title>
+  <meta name="description" content="Practise 67 Flutter interview questions, from junior to architect, with spaced-repetition flashcards. Free and open source, built from the Flutter Architect Handbook.">
+  <meta name="theme-color" content="#3F51B5">
+
+  <!-- Open Graph and Twitter cards, for link previews when a card is shared. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Flutter Interview Cards">
+  <meta property="og:title" content="Flutter Interview Cards">
+  <meta property="og:description" content="67 Flutter interview questions, from junior to architect, as spaced-repetition flashcards. Free and open source.">
+  <meta property="og:url" content="https://chandrachaan.github.io/flutter-interview-cards/">
+  <meta property="og:image" content="https://chandrachaan.github.io/flutter-interview-cards/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A flashcard asking a Flutter interview question, with Again, Hard, Good and Easy buttons.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Flutter Interview Cards">
+  <meta name="twitter:description" content="67 Flutter interview questions, from junior to architect, as spaced-repetition flashcards.">
+  <meta name="twitter:image" content="https://chandrachaan.github.io/flutter-interview-cards/og-image.png">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Interview Cards">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body { margin: 0; background: #fbf8ff; }
+    @media (prefers-color-scheme: dark) { body { background: #121318; } }
+    #loading {
+      position: fixed; inset: 0; display: flex; align-items: center;
+      justify-content: center; font: 500 16px system-ui, sans-serif;
+      color: #5b5d72;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">Loading cards…</div>
+  <noscript>Flutter Interview Cards needs JavaScript to run.</noscript>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var loading = document.getElementById('loading');
+      if (loading) loading.remove();
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

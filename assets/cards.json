@@ -1,0 +1,606 @@
+{
+  "source": {
+    "repository": "ChandraChaan/flutter-architect-handbook",
+    "commit": "372e48ea37b82962bab4acef73c3694d1880f463"
+  },
+  "chapters": [
+    {
+      "id": "dart",
+      "number": 1,
+      "title": "Dart essentials",
+      "path": "chapters/01-dart.md"
+    },
+    {
+      "id": "flutter-internals",
+      "number": 2,
+      "title": "Flutter internals",
+      "path": "chapters/02-flutter-internals.md"
+    },
+    {
+      "id": "state-management",
+      "number": 3,
+      "title": "State management",
+      "path": "chapters/03-state-management.md"
+    },
+    {
+      "id": "architecture",
+      "number": 4,
+      "title": "Architecture",
+      "path": "chapters/04-architecture.md"
+    },
+    {
+      "id": "performance",
+      "number": 5,
+      "title": "Performance",
+      "path": "chapters/05-performance.md"
+    },
+    {
+      "id": "platform-integration",
+      "number": 6,
+      "title": "Platform integration",
+      "path": "chapters/06-platform-integration.md"
+    },
+    {
+      "id": "security",
+      "number": 7,
+      "title": "Security",
+      "path": "chapters/07-security.md"
+    },
+    {
+      "id": "testing-delivery",
+      "number": 8,
+      "title": "Testing and delivery",
+      "path": "chapters/08-testing-delivery.md"
+    },
+    {
+      "id": "system-design",
+      "number": 9,
+      "title": "Mobile system design",
+      "path": "chapters/09-system-design.md"
+    },
+    {
+      "id": "leadership",
+      "number": 10,
+      "title": "Leading as an architect",
+      "path": "chapters/10-leadership.md"
+    }
+  ],
+  "cards": [
+    {
+      "id": "what-does-sound-null-safety-actually-guarantee",
+      "chapter": "dart",
+      "level": "junior",
+      "question": "What does sound null safety actually guarantee?",
+      "answer": "If a variable's type is non-nullable (`String`), it can never hold `null` at runtime. The compiler enforces this everywhere, so the checks can be removed from compiled code. `String?` opts back in, and you must handle `null` before using the value (`?.`, `??`, `if (x != null)` promotion, or `!` when you're sure).\n\nThe `!` operator is a runtime assertion. Every `!` is a place your app can still crash, so treat them as code smells to justify.",
+      "anchor": "-what-does-sound-null-safety-actually-guarantee"
+    },
+    {
+      "id": "final-vs-const-vs-late",
+      "chapter": "dart",
+      "level": "junior",
+      "question": "`final` vs `const` vs `late`?",
+      "answer": "- `final`: assigned once, at runtime.\n- `const`: a compile-time constant. Identical `const` objects are canonicalised, so Flutter can skip rebuilding a `const` widget subtree entirely.\n- `late`: \"I promise this is set before it's read\". Reading it too early throws a `LateInitializationError`. It also makes initialisers lazy: `late final x = expensive();` runs on first access.",
+      "anchor": "-final-vs-const-vs-late"
+    },
+    {
+      "id": "how-does-dart-run-asynchronous-code-on-one-thread",
+      "chapter": "dart",
+      "level": "junior",
+      "question": "How does Dart run asynchronous code on one thread?",
+      "answer": "Each isolate has one thread and an **event loop** with two queues:\n\n1. The **microtask queue**, emptied completely first (`scheduleMicrotask`, completed `Future` callbacks).\n2. The **event queue**: I/O, timers, gestures, frame callbacks.\n\n`await` doesn't create a thread. It suspends the function and schedules the rest as a callback. Long synchronous work still blocks the UI.\n\n```dart\nprint('1');\nFuture(() => print('4'));            // event queue\nscheduleMicrotask(() => print('3')); // microtask queue\nprint('2');\n// 1 2 3 4\n```",
+      "anchor": "-how-does-dart-run-asynchronous-code-on-one-thread"
+    },
+    {
+      "id": "when-do-you-need-an-isolate-and-whats-the-cheapest-way-to-use-one",
+      "chapter": "dart",
+      "level": "senior",
+      "question": "When do you need an isolate, and what's the cheapest way to use one?",
+      "answer": "When CPU work takes longer than a few milliseconds on the UI isolate: parsing a large JSON payload, image processing, encryption, diffing big lists. A frame has about 16 ms at 60 Hz (8 ms at 120 Hz).\n\n`Isolate.run` is the simplest way: it spawns, runs a function, returns the result and exits.\n\n```dart\nfinal articles = await Isolate.run(() => parseArticles(hugeJsonString));\n```\n\nIsolates don't share memory. Whatever the function captures is copied into the new isolate; the result comes back through `Isolate.exit`, which hands it over without a copy. For repeated work, keep a long-lived isolate and talk to it over `SendPort`, rather than paying the spawn cost each time.",
+      "anchor": "-when-do-you-need-an-isolate-and-whats-the-cheapest-way-to-use-one"
+    },
+    {
+      "id": "future-vs-stream-vs-streamasbroadcaststream",
+      "chapter": "dart",
+      "level": "senior",
+      "question": "`Future` vs `Stream` vs `Stream.asBroadcastStream`?",
+      "answer": "A `Future` produces one value or error. A `Stream` produces many over time.\n\nA **single-subscription** stream (most streams, like a file or HTTP body) allows one listener and buffers until it subscribes. A **broadcast** stream allows many listeners but doesn't buffer, so late listeners miss earlier events. Choose based on whether events are a sequence someone must consume in full, or notifications anyone may observe.",
+      "anchor": "-future-vs-stream-vs-streamasbroadcaststream"
+    },
+    {
+      "id": "how-do-sealed-classes-and-patterns-change-error-handling",
+      "chapter": "dart",
+      "level": "senior",
+      "question": "How do sealed classes and patterns change error handling?",
+      "answer": "A `sealed` class can only be extended in its own library, so the compiler knows every subtype and checks that a `switch` covers all of them:\n\n```dart\nsealed class Result<T> {}\nfinal class Ok<T> extends Result<T> { Ok(this.value); final T value; }\nfinal class Err<T> extends Result<T> { Err(this.error); final Object error; }\n\nString describe(Result<int> r) => switch (r) {\n  Ok(:final value) => 'Got $value',\n  Err(:final error) => 'Failed: $error',\n}; // Adding a third subtype makes this a compile error until it's handled.\n```\n\nThat makes states (loading, data, error) and domain errors explicit instead of stringly typed.",
+      "anchor": "-how-do-sealed-classes-and-patterns-change-error-handling"
+    },
+    {
+      "id": "records-vs-small-classes",
+      "chapter": "dart",
+      "level": "senior",
+      "question": "Records vs small classes?",
+      "answer": "Records (`(int, String)`, `({int id, String name})`) are anonymous, immutable, value-equal tuples. They're great for returning several values from a private function or for pattern matching. Use a class when the type has a name in your domain, behaviour, documentation or a public API, because records can't carry methods or evolve without breaking callers.",
+      "anchor": "-records-vs-small-classes"
+    },
+    {
+      "id": "what-are-extension-types-and-when-are-they-useful",
+      "chapter": "dart",
+      "level": "senior",
+      "question": "What are extension types, and when are they useful?",
+      "answer": "An extension type wraps a representation type with a new static type and **no runtime cost**:\n\n```dart\nextension type UserId(String value) {}\nvoid load(UserId id) {}\nload(UserId('42'));   // OK\nload('42');           // Compile error: a String isn't a UserId\n```\n\nUse them to stop IDs, units and tokens from being mixed up. They disappear at runtime, so they can't add safety against values that arrive as `dynamic`.",
+      "anchor": "-what-are-extension-types-and-when-are-they-useful"
+    },
+    {
+      "id": "how-would-you-introduce-strict-typing-into-a-large-loosely-typed-codebase",
+      "chapter": "dart",
+      "level": "architect",
+      "question": "How would you introduce strict typing into a large, loosely typed codebase?",
+      "answer": "Turn it on in stages so the team isn't blocked:\n\n1. Enable `strict-casts`, `strict-inference` and `strict-raw-types` in `analysis_options.yaml` for **new packages** first.\n2. Fix the shared core (models, networking) next, because every feature benefits.\n3. Track the count of `dynamic`, `!` and `// ignore` in CI and make sure it only goes down.\n4. Parse JSON at the edge into typed models (or use code generation), so `Map<String, dynamic>` never leaks past the data layer.",
+      "anchor": "-how-would-you-introduce-strict-typing-into-a-large-loosely-typed-codebase"
+    },
+    {
+      "id": "what-are-the-three-trees",
+      "chapter": "flutter-internals",
+      "level": "junior",
+      "question": "What are the three trees?",
+      "answer": "- **Widgets** are cheap, immutable descriptions of UI, rebuilt constantly.\n- **Elements** are the long-lived instances that hold a widget's place in the tree, its `State`, and its `BuildContext` (a `BuildContext` *is* an `Element`).\n- **RenderObjects** do layout, painting and hit-testing, and are expensive, so Flutter reuses them.\n\nOn rebuild, an element compares the new widget with the old one. If `runtimeType` and `key` match, it **updates** the existing element and render object instead of recreating them. That's why rebuilding is cheap and why keys matter.",
+      "anchor": "-what-are-the-three-trees"
+    },
+    {
+      "id": "constraints-go-down-sizes-go-up-parent-sets-position-what-does-that-mean-in-practice",
+      "chapter": "flutter-internals",
+      "level": "junior",
+      "question": "\"Constraints go down, sizes go up, parent sets position.\" What does that mean in practice?",
+      "answer": "A parent passes **constraints** (min and max width and height) to each child. The child picks a **size** within them and reports it up. The parent then decides where the child goes.\n\nMost layout bugs come from this: a `ListView` inside a `Column` gets unbounded height and throws, a `Container(width: 100)` inside a tight constraint ignores its width. Ask \"what constraints does this widget receive?\" before adding `Expanded` or `SizedBox` at random.",
+      "anchor": "-constraints-go-down-sizes-go-up-parent-sets-position-what-does-that-mean-in-practice"
+    },
+    {
+      "id": "when-do-you-need-a-key",
+      "chapter": "flutter-internals",
+      "level": "junior",
+      "question": "When do you need a `Key`?",
+      "answer": "When widgets of the **same type** move, get inserted or get removed among siblings, and they carry state, such as a reorderable list of text fields. Without keys, Flutter matches by position and the state ends up on the wrong item. Use `ValueKey(item.id)` for data-backed items. `GlobalKey` is for reaching a widget's state or moving it across the tree; it's expensive, so avoid it in lists.",
+      "anchor": "-when-do-you-need-a-key"
+    },
+    {
+      "id": "why-does-const-matter-for-performance",
+      "chapter": "flutter-internals",
+      "level": "senior",
+      "question": "Why does `const` matter for performance?",
+      "answer": "A `const` widget is the same instance on every build, so Flutter sees the old and new widget are `identical` and skips rebuilding that subtree. Mark leaf widgets `const` wherever you can (the lints will tell you), and pull static parts of a large `build` method into `const` widgets.",
+      "anchor": "-why-does-const-matter-for-performance"
+    },
+    {
+      "id": "what-happens-between-setstate-and-pixels-on-screen",
+      "chapter": "flutter-internals",
+      "level": "senior",
+      "question": "What happens between `setState` and pixels on screen?",
+      "answer": "1. `setState` marks the element **dirty**.\n2. On the next frame (vsync), the **build** phase rebuilds dirty elements.\n3. **Layout** runs on render objects marked as needing layout.\n4. **Paint** records drawing commands into layers. A `RepaintBoundary` isolates a subtree's layer.\n5. **Compositing** sends the layer tree to the engine, and the **raster** thread turns it into GPU commands.\n\nJank on the UI thread means build, layout or paint is too slow. Jank on the raster thread means the scene is too expensive to draw: too many `saveLayer` calls (opacity, clips, shadows), or a huge image. DevTools shows which thread is over budget.",
+      "anchor": "-what-happens-between-setstate-and-pixels-on-screen"
+    },
+    {
+      "id": "what-did-impeller-change",
+      "chapter": "flutter-internals",
+      "level": "senior",
+      "question": "What did Impeller change?",
+      "answer": "Impeller is Flutter's renderer and the default on iOS and modern Android. It compiles its shaders ahead of time, so the first-run \"shader compilation jank\" of the older Skia backend is gone. When profiling, check which renderer is active: performance characteristics differ, and some custom shaders or very old devices behave differently.",
+      "anchor": "-what-did-impeller-change"
+    },
+    {
+      "id": "how-do-inheritedwidget-and-buildcontextdependoninheritedwidgetofexacttype-work",
+      "chapter": "flutter-internals",
+      "level": "senior",
+      "question": "How do `InheritedWidget` and `BuildContext.dependOnInheritedWidgetOfExactType` work?",
+      "answer": "An `InheritedWidget` holds data for a subtree. A descendant that calls `dependOnInheritedWidgetOfExactType` (what `Theme.of`, `MediaQuery.of` and Provider use underneath) registers a dependency. When the inherited widget changes and `updateShouldNotify` returns true, **only those dependents** rebuild. This is the foundation most state management libraries build on.\n\nPrefer the narrow accessors like `MediaQuery.sizeOf(context)` over `MediaQuery.of(context)`. They only rebuild your widget when that one property changes, not on every keyboard or padding change.",
+      "anchor": "-how-do-inheritedwidget-and-buildcontextdependoninheritedwidgetofexacttype-work"
+    },
+    {
+      "id": "a-screen-rebuilds-far-too-often-how-do-you-find-and-fix-it",
+      "chapter": "flutter-internals",
+      "level": "architect",
+      "question": "A screen rebuilds far too often. How do you find and fix it?",
+      "answer": "1. Turn on **\"Track widget rebuilds\"** in DevTools (or `debugPrintRebuildDirtyWidgets`) and interact with the screen.\n2. Find what triggers the rebuild: usually a provider or `setState` that's too high in the tree, or an `InheritedWidget` dependency that's too broad.\n3. Fix by narrowing: move state down to the widget that needs it, select a slice of state (`ref.watch(p.select(...))`, `context.select`), split large `build` methods into widgets, and add `const`.\n4. Confirm the fix with the same rebuild counter, not by feel.",
+      "anchor": "-a-screen-rebuilds-far-too-often-how-do-you-find-and-fix-it"
+    },
+    {
+      "id": "ephemeral-state-vs-app-state",
+      "chapter": "state-management",
+      "level": "junior",
+      "question": "Ephemeral state vs app state?",
+      "answer": "**Ephemeral** state belongs to one widget and nobody else cares: the current tab, whether a password is visible, an animation's progress. `setState` in a `StatefulWidget` is the right tool.\n\n**App** state is shared across screens or outlives them: the signed-in user, a cart, cached data, settings. That needs a state management solution. Most over-engineering comes from putting ephemeral state into a global store.",
+      "anchor": "-ephemeral-state-vs-app-state"
+    },
+    {
+      "id": "why-is-calling-an-api-inside-build-a-bug",
+      "chapter": "state-management",
+      "level": "junior",
+      "question": "Why is calling an API inside `build()` a bug?",
+      "answer": "`build` can run many times a second (on every rebuild, rotation, keyboard change), so the request fires again each time. Start async work in `initState`, in a provider or bloc, or in response to an event, and let `build` only read the current state.",
+      "anchor": "-why-is-calling-an-api-inside-build-a-bug"
+    },
+    {
+      "id": "provider-vs-riverpod-vs-bloc-how-do-you-choose",
+      "chapter": "state-management",
+      "level": "senior",
+      "question": "Provider vs Riverpod vs BLoC: how do you choose?",
+      "answer": "| | Provider | Riverpod | BLoC |\n|---|---|---|---|\n| Model | `InheritedWidget` wrappers | Providers outside the widget tree | Events in, states out (streams) |\n| Strength | Simple, familiar | Compile-safe, no `BuildContext` needed, great for async and testing | Very explicit, traceable, enforced structure |\n| Cost | Runtime `ProviderNotFoundException`, tied to the tree | New concepts (`ref`, families, auto-dispose) | Boilerplate for small features |\n| Good fit | Small apps | Most new apps | Large teams that value strict patterns |\n\nThe honest answer in an interview: the library matters less than **consistent rules**. Where does state live, who may change it, how are side effects handled, and how is it tested?",
+      "anchor": "-provider-vs-riverpod-vs-bloc-how-do-you-choose"
+    },
+    {
+      "id": "how-should-loading-data-and-error-be-modelled",
+      "chapter": "state-management",
+      "level": "senior",
+      "question": "How should loading, data and error be modelled?",
+      "answer": "As one value with exactly one state at a time, never three separate booleans that can disagree:\n\n```dart\n// Riverpod's AsyncValue, or your own sealed class\nswitch (ref.watch(ordersProvider)) {\n  AsyncData(:final value) => OrderList(value),\n  AsyncError(:final error) => ErrorView(error),\n  _ => const Spinner(),\n}\n```\n\nAlso decide what a **refresh** shows: keeping the old data visible while reloading usually feels better than a full-screen spinner.",
+      "anchor": "-how-should-loading-data-and-error-be-modelled"
+    },
+    {
+      "id": "where-do-side-effects-like-navigation-and-snackbars-go",
+      "chapter": "state-management",
+      "level": "senior",
+      "question": "Where do side effects like navigation and snackbars go?",
+      "answer": "Not in `build`, and not in the state object itself (it shouldn't know about `BuildContext`). Listen for state transitions and react in the UI: `ref.listen`, `BlocListener`, or a `ValueListenable` listener. Emit one-off **events** separately from long-lived **state**, so a snackbar doesn't reappear after rotation.",
+      "anchor": "-where-do-side-effects-like-navigation-and-snackbars-go"
+    },
+    {
+      "id": "how-do-you-keep-state-consistent-between-screens-that-show-the-same-data",
+      "chapter": "state-management",
+      "level": "architect",
+      "question": "How do you keep state consistent between screens that show the same data?",
+      "answer": "Have a **single source of truth** per entity, usually a repository or cache layer that screens observe, instead of each screen fetching and holding its own copy. Updates (a \"like\", an edit) go through that layer, and every listening screen updates. For lists plus details, cache entities by ID, and let the list hold IDs. That avoids stale copies after an edit.",
+      "anchor": "-how-do-you-keep-state-consistent-between-screens-that-show-the-same-data"
+    },
+    {
+      "id": "how-would-you-migrate-a-large-app-from-one-state-management-approach-to-another",
+      "chapter": "state-management",
+      "level": "architect",
+      "question": "How would you migrate a large app from one state management approach to another?",
+      "answer": "Never as a big bang:\n\n1. Write down the target pattern and an example feature.\n2. Make new features use the new approach. Wrap old state so new code can read it (for example a Riverpod provider that exposes an existing `ChangeNotifier`).\n3. Migrate old features when they're touched anyway, starting with the most painful.\n4. Track progress (count of old-style files) and delete the bridge when it reaches zero.",
+      "anchor": "-how-would-you-migrate-a-large-app-from-one-state-management-approach-to-another"
+    },
+    {
+      "id": "what-is-clean-architecture-in-a-flutter-app-in-practical-terms",
+      "chapter": "architecture",
+      "level": "junior",
+      "question": "What is \"clean architecture\" in a Flutter app, in practical terms?",
+      "answer": "Three layers with dependencies pointing inwards:\n\n- **Presentation**: widgets and state holders. Knows about the domain.\n- **Domain**: models and repository **interfaces**, plus business rules. Pure Dart, knows about nothing else.\n- **Data**: implementations of those interfaces, talking to HTTP, databases and plugins.\n\nThe payoff is replaceability and testability: screens can be tested with a fake repository, and swapping a backend touches one layer. Don't add use-case classes that only forward a call; add a layer when it carries real logic.",
+      "anchor": "-what-is-clean-architecture-in-a-flutter-app-in-practical-terms"
+    },
+    {
+      "id": "feature-first-or-layer-first-folders",
+      "chapter": "architecture",
+      "level": "junior",
+      "question": "Feature-first or layer-first folders?",
+      "answer": "**Feature-first** (`features/orders/{domain,data,presentation}`) scales better. A change to \"orders\" stays in one folder, features can be owned by different people, and dead features are easy to delete. Layer-first (`models/`, `screens/`, `services/`) is fine for tiny apps, but turns into folders with hundreds of unrelated files.",
+      "anchor": "-feature-first-or-layer-first-folders"
+    },
+    {
+      "id": "how-do-you-handle-dependency-injection",
+      "chapter": "architecture",
+      "level": "senior",
+      "question": "How do you handle dependency injection?",
+      "answer": "Construct dependencies in one place (the composition root, usually `main.dart` or a provider graph), and pass interfaces in. Options:\n\n- **Riverpod** providers: DI and state in one, with overrides for tests.\n- **get_it** (plus injectable): a service locator, simple but resolves at runtime.\n- Plain **constructor injection**: the most explicit, fine for small graphs.\n\nWhatever you choose, nothing in `domain` or `presentation` should call `http.Client()` or `FirebaseFirestore.instance` directly.",
+      "anchor": "-how-do-you-handle-dependency-injection"
+    },
+    {
+      "id": "what-does-a-good-repository-look-like",
+      "chapter": "architecture",
+      "level": "senior",
+      "question": "What does a good repository look like?",
+      "answer": "- It returns **domain models**, never raw JSON or DTOs.\n- It throws (or returns) **typed domain errors**, not `DioException` or `SocketException`.\n- It hides where data comes from: network, cache, or both. Callers don't care.\n- It's an interface with one production implementation and one fake for tests.",
+      "anchor": "-what-does-a-good-repository-look-like"
+    },
+    {
+      "id": "how-do-you-design-for-offline-support",
+      "chapter": "architecture",
+      "level": "senior",
+      "question": "How do you design for offline support?",
+      "answer": "Decide per feature: **read-only cache** (show stale data with a banner), or **offline-first** (the local database is the source of truth and syncs in the background). For offline writes, store pending operations in a queue with client-generated IDs, replay them when online, and make the server operations idempotent so retries can't create duplicates. Decide conflict rules up front: last-write-wins, server-wins, or merge.",
+      "anchor": "-how-do-you-design-for-offline-support"
+    },
+    {
+      "id": "when-should-you-split-an-app-into-packages",
+      "chapter": "architecture",
+      "level": "architect",
+      "question": "When should you split an app into packages?",
+      "answer": "When the boundaries are already clear and the cost of one big package shows: slow builds, features reaching into each other's internals, or several apps sharing code. Typical splits are `core` (networking, design system), one package per large feature, and shared domain models. Use Dart **pub workspaces** (or Melos) to manage them. Splitting too early creates churn across packages for every change.",
+      "anchor": "-when-should-you-split-an-app-into-packages"
+    },
+    {
+      "id": "how-do-you-document-and-communicate-architecture-decisions",
+      "chapter": "architecture",
+      "level": "architect",
+      "question": "How do you document and communicate architecture decisions?",
+      "answer": "With short **Architecture Decision Records** (ADRs) in the repo: context, decision, alternatives considered, consequences. One page each, numbered, never rewritten (superseded instead). They answer \"why on earth did we do this?\" two years later, help onboarding, and turn arguments into a reviewable document.",
+      "anchor": "-how-do-you-document-and-communicate-architecture-decisions"
+    },
+    {
+      "id": "why-listviewbuilder-instead-of-listviewchildren-",
+      "chapter": "performance",
+      "level": "junior",
+      "question": "Why `ListView.builder` instead of `ListView(children: ...)`?",
+      "answer": "`ListView(children: [...])` builds every child up front. `ListView.builder` builds only what's visible (plus a small cache area) and recycles elements while you scroll. For long or unbounded lists the builder is the difference between smooth scrolling and building thousands of widgets at once. Give items a fixed `itemExtent` or `prototypeItem` when you can, so the list doesn't have to measure each one.",
+      "anchor": "-why-listviewbuilder-instead-of-listviewchildren-"
+    },
+    {
+      "id": "how-do-you-measure-performance-correctly",
+      "chapter": "performance",
+      "level": "junior",
+      "question": "How do you measure performance correctly?",
+      "answer": "Run in **profile mode** (`flutter run --profile`) on a **real, mid-range device**. Debug mode is many times slower and simulators don't match real GPUs. Then use DevTools: the Performance view for frame times on the UI and raster threads, and the CPU profiler for what's slow.",
+      "anchor": "-how-do-you-measure-performance-correctly"
+    },
+    {
+      "id": "how-do-images-hurt-performance-and-how-do-you-fix-it",
+      "chapter": "performance",
+      "level": "senior",
+      "question": "How do images hurt performance, and how do you fix it?",
+      "answer": "A 4000×3000 photo shown in a 100×100 avatar is decoded at full size: about 48 MB of memory and slow decoding. Fixes:\n\n- Decode at display size: `Image.network(url, cacheWidth: 200)` (account for device pixel ratio).\n- Ask the server or CDN for resized images.\n- Cache on disk (`cached_network_image` or similar) and precache images you'll need next (`precacheImage`).",
+      "anchor": "-how-do-images-hurt-performance-and-how-do-you-fix-it"
+    },
+    {
+      "id": "what-makes-the-raster-thread-slow",
+      "chapter": "performance",
+      "level": "senior",
+      "question": "What makes the raster thread slow?",
+      "answer": "Expensive effects: `Opacity` and `ShaderMask` on large subtrees, clips with anti-aliasing, `BackdropFilter`, many shadows, and anything that triggers `saveLayer`. Use `AnimatedOpacity` or `FadeTransition` instead of rebuilding an `Opacity`, use colours with alpha instead of `Opacity` on simple shapes, and wrap independently animating parts in a `RepaintBoundary` so the rest isn't repainted.",
+      "anchor": "-what-makes-the-raster-thread-slow"
+    },
+    {
+      "id": "how-do-you-improve-app-startup-time",
+      "chapter": "performance",
+      "level": "senior",
+      "question": "How do you improve app startup time?",
+      "answer": "- Do less before the first frame: move initialisation (analytics, remote config, non-critical SDKs) to after the first frame or to first use.\n- Avoid large synchronous work in `main`, such as reading big files or decoding JSON.\n- Make the first screen cheap. Show cached content immediately and refresh it.\n- Measure with `flutter run --profile --trace-startup`, and track cold start in production analytics.",
+      "anchor": "-how-do-you-improve-app-startup-time"
+    },
+    {
+      "id": "how-do-you-reduce-app-size",
+      "chapter": "performance",
+      "level": "senior",
+      "question": "How do you reduce app size?",
+      "answer": "Build per-ABI (`--split-per-abi`, or App Bundles on Android), use `--obfuscate --split-debug-info` (smaller and harder to reverse), compress and resize assets, remove unused fonts and packages, and check what's big with `flutter build apk --analyze-size`.",
+      "anchor": "-how-do-you-reduce-app-size"
+    },
+    {
+      "id": "how-do-you-stop-performance-from-regressing",
+      "chapter": "performance",
+      "level": "architect",
+      "question": "How do you stop performance from regressing?",
+      "answer": "Make it measurable and automatic:\n\n1. Pick a few **key scenarios** (startup, scrolling the main feed, opening a product).\n2. Write **integration tests** that record timelines (`traceAction`) and fail on budgets: frame build time, jank count.\n3. Run them on real devices in CI (Firebase Test Lab or a device farm) for release branches.\n4. Watch production metrics too: slow and frozen frames, ANR rate, crash-free users.",
+      "anchor": "-how-do-you-stop-performance-from-regressing"
+    },
+    {
+      "id": "methodchannel-vs-eventchannel",
+      "chapter": "platform-integration",
+      "level": "junior",
+      "question": "`MethodChannel` vs `EventChannel`?",
+      "answer": "A **MethodChannel** is request and response: Dart calls `invokeMethod('getBattery')` and awaits one result from native code (or the other way round). An **EventChannel** is a stream from native to Dart: sensor readings, Bluetooth notifications, download progress. Both send messages asynchronously through a codec, so they're for coarse-grained calls, not tight loops.",
+      "anchor": "-methodchannel-vs-eventchannel"
+    },
+    {
+      "id": "why-use-pigeon-instead-of-hand-written-channels",
+      "chapter": "platform-integration",
+      "level": "senior",
+      "question": "Why use Pigeon instead of hand-written channels?",
+      "answer": "Hand-written channels pass maps and strings, so a typo in a method name or key only fails at runtime, on one platform. **Pigeon** generates type-safe Dart, Kotlin, Swift (and other) code from one Dart definition, so the compiler catches mismatches on every side. Use it for any channel with more than a couple of methods.",
+      "anchor": "-why-use-pigeon-instead-of-hand-written-channels"
+    },
+    {
+      "id": "when-would-you-use-ffi-instead-of-a-channel",
+      "chapter": "platform-integration",
+      "level": "senior",
+      "question": "When would you use FFI instead of a channel?",
+      "answer": "When you call a **C API** (or C-compatible Rust, C++, or system library) directly: image codecs, crypto, databases like SQLite, or heavy computation. `dart:ffi` calls are synchronous and much cheaper than channel messages, with no platform-specific glue code. `ffigen` generates the bindings from C and Objective-C headers, and `jnigen` does the same for Java and Kotlin.",
+      "anchor": "-when-would-you-use-ffi-instead-of-a-channel"
+    },
+    {
+      "id": "walk-through-connecting-to-a-bluetooth-le-device",
+      "chapter": "platform-integration",
+      "level": "senior",
+      "question": "Walk through connecting to a Bluetooth LE device.",
+      "answer": "1. **Permissions**: Android 12+ needs `BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` (location only if you derive location from scans); iOS needs `NSBluetoothAlwaysUsageDescription`.\n2. **Scan**, filtering by service UUID so you don't list every nearby device.\n3. **Connect**, then **discover services**.\n4. **Subscribe** to notifications on the characteristic you need, and **parse** the bytes according to the Bluetooth SIG spec (flags byte first, little-endian fields, IEEE 11073 floats).\n5. Handle **disconnects** with a reconnect strategy and a visible state in the UI.\n\nMost production bugs are in step 5 and in parsing optional fields that some devices don't send.",
+      "anchor": "-walk-through-connecting-to-a-bluetooth-le-device"
+    },
+    {
+      "id": "how-does-background-work-differ-between-android-and-ios",
+      "chapter": "platform-integration",
+      "level": "senior",
+      "question": "How does background work differ between Android and iOS?",
+      "answer": "Android lets you schedule deferrable work (`WorkManager`) and run foreground services with a visible notification. iOS is much stricter: background fetch and processing tasks run when the system decides, with short time limits, and long-running work is only allowed for specific modes (audio, location, VoIP, BLE accessories). Design features so they don't depend on precise background timing, and use push notifications to wake the app when the server knows something changed.",
+      "anchor": "-how-does-background-work-differ-between-android-and-ios"
+    },
+    {
+      "id": "how-do-you-design-a-plugin-that-several-apps-in-a-company-will-share",
+      "chapter": "platform-integration",
+      "level": "architect",
+      "question": "How do you design a plugin that several apps in a company will share?",
+      "answer": "- Use the **federated plugin** structure: an app-facing package, a platform interface package, and one implementation package per platform, so platforms can evolve and be tested independently.\n- Define the API in Dart first, generate the bridge with Pigeon, and keep native code thin.\n- Expose typed errors and streams, not raw platform exceptions.\n- Ship a **fake implementation** for tests and an example app that runs on CI.\n- Version it with semantic versioning and a changelog. Apps upgrade on their own schedule.",
+      "anchor": "-how-do-you-design-a-plugin-that-several-apps-in-a-company-will-share"
+    },
+    {
+      "id": "where-should-tokens-and-secrets-be-stored-on-the-device",
+      "chapter": "security",
+      "level": "junior",
+      "question": "Where should tokens and secrets be stored on the device?",
+      "answer": "In the platform's secure storage: **Keychain** on iOS and **Keystore**-backed encryption on Android (for example via `flutter_secure_storage`). Never in `SharedPreferences`, plain files or logs. Keep access tokens short-lived and refresh them, so a leaked token expires quickly.",
+      "anchor": "-where-should-tokens-and-secrets-be-stored-on-the-device"
+    },
+    {
+      "id": "can-you-keep-an-api-key-secret-inside-a-mobile-app",
+      "chapter": "security",
+      "level": "junior",
+      "question": "Can you keep an API key secret inside a mobile app?",
+      "answer": "No. Anything shipped in the app, including `--dart-define` values, assets and obfuscated code, can be extracted. Treat app-embedded keys as public: restrict them (by app signature, bundle ID or referrer), and keep real secrets on your server, which the app reaches with the user's own credentials.",
+      "anchor": "-can-you-keep-an-api-key-secret-inside-a-mobile-app"
+    },
+    {
+      "id": "what-is-ssl-pinning-and-what-are-the-risks",
+      "chapter": "security",
+      "level": "senior",
+      "question": "What is SSL pinning, and what are the risks?",
+      "answer": "Pinning makes the app trust only a specific certificate or public key for your API, instead of any certificate the device trusts. That defeats interception by a compromised or user-installed CA on hostile networks.\n\nThe risk is **bricking the app**: if the server's certificate changes and the app pins the old one, every request fails until users update. Mitigate by pinning the intermediate CA or public key (not the leaf certificate), shipping a backup pin, monitoring certificate expiry, and having a remote kill switch or a forced-update path.",
+      "anchor": "-what-is-ssl-pinning-and-what-are-the-risks"
+    },
+    {
+      "id": "what-does---obfuscate-protect-against-and-what-doesnt-it",
+      "chapter": "security",
+      "level": "senior",
+      "question": "What does `--obfuscate` protect against, and what doesn't it?",
+      "answer": "`--obfuscate --split-debug-info=<dir>` renames symbols in compiled Dart code, which makes reverse engineering harder and the app slightly smaller. It doesn't hide strings, assets, API endpoints or business logic from a determined attacker. Keep the debug-info files so you can symbolicate crash reports.",
+      "anchor": "-what-does---obfuscate-protect-against-and-what-doesnt-it"
+    },
+    {
+      "id": "how-do-you-protect-sensitive-screens",
+      "chapter": "security",
+      "level": "senior",
+      "question": "How do you protect sensitive screens?",
+      "answer": "- Prevent screenshots and screen recording on screens like card details or OTP (Android `FLAG_SECURE`; on iOS, detect capture and blur the content).\n- Blur or cover the app in the app switcher.\n- Clear sensitive data from memory and text fields when leaving the screen.\n- Don't log personal data, and scrub it from crash reports.",
+      "anchor": "-how-do-you-protect-sensitive-screens"
+    },
+    {
+      "id": "how-would-you-approach-security-for-a-fintech-app",
+      "chapter": "security",
+      "level": "architect",
+      "question": "How would you approach security for a FinTech app?",
+      "answer": "Start from a standard: the **OWASP MASVS** for requirements and the MASTG for testing. Then, in layers:\n\n- **Device**: root and jailbreak detection, app attestation (Play Integrity, App Attest) checked **on the server**, since client-side checks can be patched out.\n- **Data**: secure storage, encryption for local databases holding personal data, no secrets in the binary.\n- **Network**: TLS everywhere, pinning with a rotation plan, and signed requests for critical operations.\n- **Auth**: biometric unlock tied to Keystore/Keychain keys, short sessions, step-up authentication for payments.\n- **Process**: dependency scanning, regular penetration tests, and a plan for responding to incidents.",
+      "anchor": "-how-would-you-approach-security-for-a-fintech-app"
+    },
+    {
+      "id": "unit-widget-and-integration-tests-what-does-each-cover",
+      "chapter": "testing-delivery",
+      "level": "junior",
+      "question": "Unit, widget and integration tests: what does each cover?",
+      "answer": "- **Unit**: one class or function, no Flutter. Fast; use them for business logic, parsing and state holders.\n- **Widget**: one screen or component in a fake environment (`testWidgets`, `pumpWidget`). Still fast, and the best value in most apps: they check what users see.\n- **Integration** (`integration_test`): the real app on a device or emulator. Slow and sometimes flaky; keep them for a few critical journeys like sign-in and checkout.",
+      "anchor": "-unit-widget-and-integration-tests-what-does-each-cover"
+    },
+    {
+      "id": "how-do-you-make-code-testable",
+      "chapter": "testing-delivery",
+      "level": "senior",
+      "question": "How do you make code testable?",
+      "answer": "Inject dependencies through constructors or providers instead of creating them inside the class, depend on interfaces, keep `build` methods free of logic, and pass in sources of time and randomness (a `Clock`, a seeded `Random`) so tests are deterministic. If a test needs a lot of setup, that's usually a design problem, not a testing problem.",
+      "anchor": "-how-do-you-make-code-testable"
+    },
+    {
+      "id": "mocks-or-fakes",
+      "chapter": "testing-delivery",
+      "level": "senior",
+      "question": "Mocks or fakes?",
+      "answer": "A **fake** is a small, working implementation (an in-memory repository). A **mock** (`mocktail`) records calls and returns scripted answers. Prefer fakes for things many tests use, like repositories: tests read naturally and don't break when internals change. Use mocks to check an interaction actually happened, such as \"the analytics event was sent once\".",
+      "anchor": "-mocks-or-fakes"
+    },
+    {
+      "id": "what-are-golden-tests-good-for",
+      "chapter": "testing-delivery",
+      "level": "senior",
+      "question": "What are golden tests good for?",
+      "answer": "They render a widget to an image and compare it with a stored \"golden\" file, catching visual regressions in design-system components. Keep them focused on stable components, render with a fixed font and size, and run them on one platform in CI, because font rendering differs between operating systems.",
+      "anchor": "-what-are-golden-tests-good-for"
+    },
+    {
+      "id": "what-should-a-flutter-ci-pipeline-do",
+      "chapter": "testing-delivery",
+      "level": "senior",
+      "question": "What should a Flutter CI pipeline do?",
+      "answer": "On every pull request: `dart format --set-exit-if-changed`, `flutter analyze`, `flutter test` (with coverage), and a build for at least one platform. On the main branch and for releases: build signed artifacts with the release environment, upload debug symbols, and distribute to testers (TestFlight, Play internal testing). Tools: GitHub Actions, Codemagic, Bitrise, plus Fastlane for store steps.",
+      "anchor": "-what-should-a-flutter-ci-pipeline-do"
+    },
+    {
+      "id": "how-do-you-release-safely-to-millions-of-users",
+      "chapter": "testing-delivery",
+      "level": "architect",
+      "question": "How do you release safely to millions of users?",
+      "answer": "- **Staged rollouts**: start at 1–5% and watch crash-free users and key metrics before increasing.\n- **Feature flags** (remote config) to turn features off without a release, and to ship code dark.\n- **Forced update** mechanism for critical fixes or API changes.\n- **Monitoring**: crash-free rate (aim for 99.8%+ users), ANRs, slow frames, API error rates, with alerts.\n- **Backwards-compatible APIs**: old app versions stay in use for months, so the backend must support them.",
+      "anchor": "-how-do-you-release-safely-to-millions-of-users"
+    },
+    {
+      "id": "design-an-infinite-feed-social-posts-products-news",
+      "chapter": "system-design",
+      "level": "senior",
+      "question": "Design an infinite feed (social posts, products, news).",
+      "answer": "- **Pagination**: cursor-based (`?after=<cursor>`), not page numbers, so new items don't shift pages and cause duplicates.\n- **Prefetch** the next page when the user is a few items from the end.\n- **Cache** the first page locally so the app opens instantly with content, then refresh.\n- **Images**: resized URLs from a CDN, decoded at display size, cached on disk.\n- **Updates**: \"N new posts\" pill instead of jumping the list, keep scroll position across rebuilds.\n- **Failures**: an inline retry row at the end of the list, not a full-screen error.",
+      "anchor": "-design-an-infinite-feed-social-posts-products-news"
+    },
+    {
+      "id": "design-a-chat-feature",
+      "chapter": "system-design",
+      "level": "senior",
+      "question": "Design a chat feature.",
+      "answer": "- **Transport**: WebSocket (or MQTT) while in the foreground, push notifications when backgrounded.\n- **Local database** as the source of truth: messages render from it; the network fills it.\n- **Sending**: write locally with a client-generated ID and a \"sending\" state, then confirm with the server ID. Retry on reconnect; the client ID makes retries idempotent.\n- **Ordering**: by server timestamp or sequence number, not the device clock.\n- **Sync**: on reconnect, fetch everything after the last known sequence number.\n- **Extras**: typing indicators and read receipts as lightweight events, media uploaded separately with progress.",
+      "anchor": "-design-a-chat-feature"
+    },
+    {
+      "id": "design-a-payments-flow-in-a-fintech-app",
+      "chapter": "system-design",
+      "level": "architect",
+      "question": "Design a payments flow in a FinTech app.",
+      "answer": "- **Idempotency**: every payment request carries an idempotency key created on the device, so a retry after a timeout can't charge twice.\n- **State machine**: `created → authorising → pending → success | failed`, persisted locally, so the app can recover if it's killed mid-payment, and reconciled with the server, which is the source of truth.\n- **Unknown outcomes**: after a timeout, poll or wait for a webhook-driven push instead of telling the user it failed.\n- **Security**: no card data stored on the device (use the gateway's SDK or tokenisation), step-up authentication, pinning, attestation.\n- **Observability**: trace every payment with a correlation ID across app, backend and gateway.",
+      "anchor": "-design-a-payments-flow-in-a-fintech-app"
+    },
+    {
+      "id": "design-an-app-that-syncs-health-data-from-wearables",
+      "chapter": "system-design",
+      "level": "architect",
+      "question": "Design an app that syncs health data from wearables.",
+      "answer": "- **Sources**: Apple HealthKit, Health Connect, and direct BLE devices, each behind one `HealthSource` interface.\n- **Normalise** everything into one model with units, source and device, and **deduplicate**, because the same steps can arrive from a watch and the phone.\n- **Incremental sync**: store a per-source anchor or change token and fetch only what changed.\n- **Background**: use the platform's background delivery where available, and catch up on app open otherwise.\n- **Upload** in batches with retries and backoff; aggregate on the server.\n- **Privacy**: explicit consent per data type, minimal collection, encryption, and a way to delete everything.",
+      "anchor": "-design-an-app-that-syncs-health-data-from-wearables"
+    },
+    {
+      "id": "how-do-you-design-for-an-app-that-must-keep-working-on-poor-networks",
+      "chapter": "system-design",
+      "level": "architect",
+      "question": "How do you design for an app that must keep working on poor networks?",
+      "answer": "- Short timeouts with retries and exponential backoff with jitter, but only for idempotent requests.\n- Smaller payloads: pagination, compression, fields selection, efficient image sizes.\n- Optimistic UI for user actions, with a pending queue persisted to disk.\n- Show connectivity state, but rely on actual request failures, not on the connectivity API, which can say \"connected\" without real internet.\n- Test on purpose: network link conditioners, airplane-mode toggling, and killing the app mid-request.",
+      "anchor": "-how-do-you-design-for-an-app-that-must-keep-working-on-poor-networks"
+    },
+    {
+      "id": "tell-me-about-a-technical-decision-you-made-that-turned-out-wrong",
+      "chapter": "leadership",
+      "level": "senior",
+      "question": "Tell me about a technical decision you made that turned out wrong.",
+      "answer": "What it shows: you make decisions with incomplete information, notice when they're wrong, and fix them without blame. Cover what you knew at the time, the signal that told you it was wrong, how you changed course, and what you do differently now.",
+      "anchor": "-tell-me-about-a-technical-decision-you-made-that-turned-out-wrong"
+    },
+    {
+      "id": "how-do-you-review-code",
+      "chapter": "leadership",
+      "level": "senior",
+      "question": "How do you review code?",
+      "answer": "Strong answers separate **must-fix** (correctness, security, data loss) from **suggestions** (naming, style), automate style with linters so reviews focus on design, keep reviews fast (same day), and treat reviews as teaching: explain the \"why\", and approve when it's good enough rather than perfect.",
+      "anchor": "-how-do-you-review-code"
+    },
+    {
+      "id": "how-do-you-handle-technical-debt",
+      "chapter": "leadership",
+      "level": "architect",
+      "question": "How do you handle technical debt?",
+      "answer": "Make it visible and economic, not moral: keep a list with the cost of each item (slower features, incidents, onboarding time), fix debt in the areas you're already changing, reserve a steady share of capacity for the highest-cost items, and say no to new debt without a written reason and an owner.",
+      "anchor": "-how-do-you-handle-technical-debt"
+    },
+    {
+      "id": "two-senior-engineers-disagree-strongly-on-an-approach-what-do-you-do",
+      "chapter": "leadership",
+      "level": "architect",
+      "question": "Two senior engineers disagree strongly on an approach. What do you do?",
+      "answer": "Get both options written down against the same criteria (risk, cost, reversibility, team skills). Often the disagreement is about unstated assumptions. Prototype the riskiest part if it's cheap. Then decide, record it in an ADR including the losing option, and commit together. Reversible decisions should be made fast; irreversible ones deserve more time.",
+      "anchor": "-two-senior-engineers-disagree-strongly-on-an-approach-what-do-you-do"
+    },
+    {
+      "id": "how-do-you-grow-the-engineers-on-your-team",
+      "chapter": "leadership",
+      "level": "architect",
+      "question": "How do you grow the engineers on your team?",
+      "answer": "Concrete habits: pair on the hard parts instead of taking them over, delegate whole problems (not tasks), give feedback quickly and specifically, create a clear path from developer to senior (what \"senior\" means in practice on this team), and give people visible ownership of components and decisions.",
+      "anchor": "-how-do-you-grow-the-engineers-on-your-team"
+    },
+    {
+      "id": "how-do-you-estimate-a-large-feature",
+      "chapter": "leadership",
+      "level": "architect",
+      "question": "How do you estimate a large feature?",
+      "answer": "Break it into thin vertical slices that each deliver something testable, estimate the unknowns separately from the knowns (a short spike first for anything new, like a payment SDK or BLE device), give a **range** with the assumptions it depends on, and re-estimate as you learn. Track estimates against actuals to calibrate the team.",
+      "anchor": "-how-do-you-estimate-a-large-feature"
+    }
+  ]
+}

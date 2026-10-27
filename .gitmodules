@@ -1,0 +1,3 @@
+[submodule "third_party/flutter-architect-handbook"]
+	path = third_party/flutter-architect-handbook
+	url = https://github.com/ChandraChaan/flutter-architect-handbook
